@@ -10,6 +10,7 @@ require_relative 'submit_for_review'
 require_relative 'upload_price_tier'
 require_relative 'upload_metadata'
 require_relative 'upload_screenshots'
+require_relative 'upload_custom_product_page_screenshots'
 require_relative 'sync_screenshots'
 require_relative 'detect_values'
 
@@ -151,7 +152,16 @@ module Deliver
       # Commit
       upload_metadata.upload
 
-      if options[:sync_screenshots]
+      if options[:custom_product_page_id]
+        cpp_options = options.dup
+        if options[:custom_product_page_screenshots_path]
+          cpp_options[:screenshots_path] = options[:custom_product_page_screenshots_path]
+        end
+
+        cpp_upload = UploadCustomProductPageScreenshots.new
+        cpp_screenshots = cpp_upload.collect_screenshots(cpp_options)
+        cpp_upload.upload(cpp_options, cpp_screenshots)
+      elsif options[:sync_screenshots]
         sync_screenshots = SyncScreenshots.new(app: Deliver.cache[:app], platform: Spaceship::ConnectAPI::Platform.map(options[:platform]))
         sync_screenshots.sync(screenshots)
       else

@@ -1,3 +1,54 @@
+## Custom Product Page Screenshots (Deliver)
+
+> ⚠️ Warning! These changes have been **vibecoded**. Use at your own risk.
+
+This fork extends Deliver to upload screenshots to App Store Connect Custom Product Pages (CPP) while reusing the same logic as regular screenshots (upload queueing, processing wait, retry, and sorting). It supports two modes:
+
+- Sync mode (`sync_screenshots: true`): Diff-based updates. Deletes only failing/extra screenshots and uploads only missing ones. Recommended for reliability when Apple responds with transient 5xx errors.
+- Overwrite mode (`overwrite_screenshots: true` and `sync_screenshots: false`): Deletes entire screenshot sets for the languages you’re uploading, then re-uploads. Use only when you truly want a full reset.
+
+Requirements and behavior
+
+- Provide your Custom Product Page ID via `custom_product_page_id` (e.g., `021f20ac-3614-435b-9fd0-fe3c042b165c`).
+- A CPP version must exist. Deliver will select a non-published (editable) version if available, otherwise the last version.
+- Missing CPP version localizations are auto-created based on your local screenshot languages.
+- Folder structure is identical to regular screenshots (e.g., `en-US/iPhone-01.png`, `de-DE/iPad-01.png`).
+- Sorting runs after upload to keep order stable.
+
+Usage examples
+
+Reuse your existing screenshots folder for CPP:
+
+```ruby
+upload_to_app_store(
+  skip_binary_upload: true,
+  skip_metadata: true,
+  sync_screenshots: true, # diff-based sync (recommended)
+  custom_product_page_id: "021f20ac-3614-435b-9fd0-fe3c042b165c",
+  screenshots_path: "./fastlane/store_screenshots",
+  api_key_path: "./fastlane/KJAQS4LC2P.json",
+  precheck_include_in_app_purchases: false
+)
+```
+
+Use a separate folder for CPP screenshots:
+
+```ruby
+upload_to_app_store(
+  skip_binary_upload: true,
+  skip_metadata: true,
+  sync_screenshots: true,
+  custom_product_page_id: "021f20ac-3614-435b-9fd0-fe3c042b165c",
+  custom_product_page_screenshots_path: "./fastlane/cpp_screenshots",
+  api_key_path: "./fastlane/KJAQS4LC2P.json",
+  precheck_include_in_app_purchases: false
+)
+```
+
+Enjoy.
+
+----------------------------
+
 <h3 align="center">
   <a href="https://github.com/fastlane/fastlane/blob/master/fastlane/assets/fastlane_text.png">
   <img src="https://github.com/fastlane/fastlane/blob/master/fastlane/assets/fastlane_text.png?raw=true" alt="fastlane Logo" width="500">
