@@ -34,12 +34,28 @@ module Deliver
       UI.message("Starting with the upload of screenshots for Custom Product Page...")
       screenshots_per_language = screenshots.group_by(&:language)
 
-      # Find an editable version (fallback to latest)
-      versions = Spaceship::ConnectAPI::AppCustomProductPageVersion.all(app_custom_product_page_id: cpp.id)
-      UI.user_error!("Custom Product Page has no versions to upload to") if versions.nil? || versions.empty?
+      # Determine target version (explicit or auto-select)
+      editable_states = %w[DRAFT PREPARE_FOR_SUBMISSION]
+      if options[:custom_product_page_version_id]
+        preferred = Spaceship::ConnectAPI::AppCustomProductPageVersion.get(app_custom_product_page_version_id: options[:custom_product_page_version_id]).first
+        UI.user_error!("Could not find custom product page version with id '#{options[:custom_product_page_version_id]}'") unless preferred
+        state = (preferred.state || '').to_s.upcase
+        unless editable_states.include?(state)
+          UI.user_error!("Custom Product Page Version #{preferred.id} is not editable (state=#{preferred.state}). Please provide a version in one of: #{editable_states.join(', ')}")
+        end
+      else
+        versions = Spaceship::ConnectAPI::AppCustomProductPageVersion.all(app_custom_product_page_id: cpp.id)
+        UI.user_error!("Custom Product Page has no versions to upload to") if versions.nil? || versions.empty?
 
-      # Prefer a DRAFT/IN_REVIEW-like state if available, otherwise the last
-      preferred = versions.find { |v| v.state && v.state.to_s.upcase != 'PUBLISHED' } || versions.last
+        # Prefer most recent editable version
+        preferred = versions.reverse.find { |v| v.state && editable_states.include?(v.state.to_s.upcase) }
+        if preferred.nil?
+          states = versions.map { |v| "#{v.id}:#{(v.state || 'UNKNOWN').to_s}" }.join(', ')
+          UI.user_error!("No editable version found for Custom Product Page. Versions: #{states}. Please create a new Draft in App Store Connect and try again.")
+        end
+      end
+
+      UI.message("Using Custom Product Page Version #{preferred.id} (state=#{preferred.state}) for uploads")
 
       localizations = preferred.get_localizations
 
@@ -49,7 +65,7 @@ module Deliver
       if locales_to_enable.count > 0
         lng_text = "language"
         lng_text += "s" if locales_to_enable.count != 1
-        Helper.show_loading_indicator("Activating #{lng_text} #{locales_to_enable.join(', ')} for Custom Product Page...")
+        Helper.show_loading_indicator("Activating #{lng_text} #{locales_to_enable.join(', ')} for Custom Product Page Version #{preferred.id} (#{preferred.state})...")
         locales_to_enable.each do |locale|
           preferred.create_localization(attributes: { locale: locale })
         end

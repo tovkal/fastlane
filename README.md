@@ -10,7 +10,7 @@ This fork extends Deliver to upload screenshots to App Store Connect Custom Prod
 Requirements and behavior
 
 - Provide your Custom Product Page ID via `custom_product_page_id` (e.g., `021f20ac-3614-435b-9fd0-fe3c042b165c`).
-- A CPP version must exist. Deliver will select a non-published (editable) version if available, otherwise the last version.
+- A CPP version must exist. Deliver will select an editable version (DRAFT or PREPARE_FOR_SUBMISSION). If none exists, it will error and list available versions/states. You can also force a specific version via `custom_product_page_version_id`.
 - Missing CPP version localizations are auto-created based on your local screenshot languages.
 - Folder structure is identical to regular screenshots (e.g., `en-US/iPhone-01.png`, `de-DE/iPad-01.png`).
 - Sorting runs after upload to keep order stable.
